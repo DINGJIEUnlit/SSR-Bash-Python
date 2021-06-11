@@ -377,7 +377,7 @@ else
 #        git checkout develop
 #    fi
     cd ..
-    mv AR-B-P-B SSR-Bash-Python
+#    mv AR-B-P-B SSR-Bash-Python
     bashinstall="no"
 fi
 cd /usr/local/shadowsocksr
