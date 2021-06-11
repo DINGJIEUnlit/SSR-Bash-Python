@@ -71,9 +71,15 @@ echo '4.auth_aes128_sha1'
 echo '5.verify_deflate'
 echo '6.auth_chain_a'
 echo '7.auth_chain_b'
+echo '8.auth_chain_c'
+echo '9.auth_chain_d'
+echo '10.auth_chain_e'
 while :; do echo
 	read -p "输入协议方式： " ux
-	if [[ ! $ux =~ ^[1-7]$ ]]; then
+	if [[ ! $ux =~ ^[1-9]$ ]]; then
+		if [[ $ux == 10 ]]; then
+			break
+		fi
 		echo "输入错误! 请输入正确的数字!"
 	else
 		break	
@@ -91,7 +97,7 @@ if [[ $ux == 2 ]];then
 	done
 fi
 
-if [[ $ux =~ ^[2,3,4,6,7,8,9]$ ]]; then
+if [[ ! $ux =~ ^[1,5]$ ]]; then
 	if [[ ! $ifprotocolcompatible == "y" ]]; then
 		while :; do echo 
 			read -p "请输入连接数限制(建议最少 2个): " uparam
@@ -181,6 +187,17 @@ if [[ $ux == 7 ]];then
 	ux1="auth_chain_b"
 fi
 
+if [[ $ux == 8 ]];then
+	ux1="auth_chain_c"
+fi
+if [[ $ux == 9 ]];then
+	ux1="auth_chain_d"
+fi
+
+if [[ $ux == 10 ]];then
+	ux1="auth_chain_e"
+fi
+
 if [[ $uo == 1 ]];then
 	uo1="plain"
 fi
@@ -231,7 +248,26 @@ if [[ $iflimitspeed == y ]]; then
 	done
 fi
 
+while :; do
+	read -p "是否需要限制帐号有效期(y/n): " iflimittime
+	if [[ ! ${iflimittime} =~ ^[y,n]$ ]]; then
+		echo "输入错误! 请输入y或者n!"
+	else
+		break
+	fi
+done
 
+if [[ ${iflimittime} == y ]]; then
+	read -p "请输入有效期(单位：月[m]日[d]小时[h],例如：1个月就输入1m){默认：一个月}: " limit
+	if [[ -z ${limit} ]];then
+		limit="1m"
+	fi
+	bash /usr/local/SSR-Bash-Python/timelimit.sh a ${uport} ${limit}
+	datelimit=$(cat /usr/local/SSR-Bash-Python/timelimit.db | grep "${uport}:" | awk -F":" '{ print $2 }' | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9}\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1年\2月\3日 \4:/')
+fi
+if [[ -z ${datelimit} ]]; then
+	datelimit="永久"
+fi
 
 #Set Firewalls
 if [[ ${OS} =~ ^Ubuntu$|^Debian$ ]];then
@@ -255,7 +291,6 @@ if [[ ${OS} == CentOS ]];then
 		/etc/init.d/iptables restart
 	fi
 fi
-
 
 #Run ShadowsocksR
 echo "用户添加成功！用户信息如下："
@@ -298,4 +333,11 @@ echo "协议: $ux1"
 echo "混淆方式: $uo1"
 echo "流量: $ut GB"
 echo "允许连接数: $uparam"
+echo "帐号有效期: $datelimit"
 echo "===================="
+echo ""
+echo "是否需要为该用户生成二维码？（y/n）"
+read -n 1 cyn
+if [[ $cyn == [yY] ]];then
+	bash /usr/local/SSR-Bash-Python/user/qrcode.sh u $uname
+fi

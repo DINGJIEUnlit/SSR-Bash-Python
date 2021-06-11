@@ -3,10 +3,55 @@ export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 #Check Root
 [ $(id -u) != "0" ] && { echo "Error: You must be root to run this script"; exit 1; }
+
+if [[ -e "/usr/local/SSR-Bash-Python/update.txt" ]];then
+	echo ""
+	cat /usr/local/SSR-Bash-Python/update.txt
+	read -n 1 -p "任意键退出" any
+	if [[ -e /usr/local/SSR-Bash-Python/oldupdate.txt ]];then
+		rm -f /usr/local/SSR-Bash-Python/oldupdate.txt
+	fi
+	mv /usr/local/SSR-Bash-Python/update.txt /usr/local/SSR-Bash-Python/oldupdate.txt
+fi
+PID=$(ps -ef |grep -v grep | grep "bash" | grep "servercheck.sh" | grep "run" | awk '{print $2}')
+if [[ -z $PID ]];then
+	if [[ -e /usr/local/SSR-Bash-Python/check.log ]];then
+		nohup bash /usr/local/SSR-Bash-Python/servercheck.sh run 2>/dev/null &
+	fi
+fi
+
+#Check log
+if [[ -e /usr/local/shadowsocksr/ssserver.log ]];then
+log_max=$((10*1024))
+log_filesize=$(du /usr/local/shadowsocksr/ssserver.log | awk -F' ' '{ print $1 }')
+if [[ ${log_filesize} -ge ${log_max} ]];then
+    sed -i -n '1,198N;$p;N;D' /usr/local/shadowsocksr/ssserver.log
+fi
+fi
+yiyan(){
+nowdate=$(date +%Y-%m-%d)
+if [[ ! -e /tmp/yiyan.tmp || ! -e /tmp/yiyan.date ]];then
+    echo "${nowdate}" > /tmp/yiyan.date
+    #echo "$(curl -L -s https://sslapi.hitokoto.cn/?encode=text)" >> /tmp/yiyan.tmp
+    echo "$(curl -L -s --connect-timeout 3 https://us.fdos.me/yiyan/ || curl -L -s https://sslapi.hitokoto.cn/?encode=text)" >> /tmp/yiyan.tmp
+    tail -n 1 /tmp/yiyan.tmp
+else
+    if [[ ${nowdate} == $(cat /tmp/yiyan.date) ]];then
+        tail -n 1 /tmp/yiyan.tmp
+    else
+        echo "${nowdate}" > /tmp/yiyan.date
+        #echo "$(curl -L -s https://sslapi.hitokoto.cn/?encode=text)" >> /tmp/yiyan.tmp
+	echo "$(curl -L -s --connect-timeout 3 https://us.fdos.me/yiyan/ || curl -L -s https://sslapi.hitokoto.cn/?encode=text)" >> /tmp/yiyan.tmp
+        tail -n 1 /tmp/yiyan.tmp
+    fi
+fi
+}
+
+echo
 echo "*******************"
 echo ""
-echo "欢迎使用 AR (Python Base) 
-"
+echo -e "欢迎使用 AR (Python Base) Beta\n"
+echo -e "每日一言：\033[32m$(yiyan)\033[0m\n"
 echo "输入数字选择功能："
 echo ""
 echo "1.服务器控制"

@@ -1,4 +1,4 @@
- #!/bin/bash
+#!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 
@@ -33,17 +33,29 @@ fi
 #Check Root
 [ $(id -u) != "0" ] && { echo "Error: You must be root to run this script"; exit 1; }
 
+rand(){  
+    min=$1  
+    max=$(($2-$min+1))  
+    num=$(cat /dev/urandom | head -n 10 | cksum | awk -F ' ' '{print $1}')  
+    echo $(($num%$max+$min))  
+}
+
+source /usr/local/SSR-Bash-Python/easyadd.conf
+
 echo "你选择了添加用户"
 echo ""
 read -p "输入用户名： " uname
-uport=`head -200 /dev/urandom | cksum | awk -F" " '{ print $2 }'`
 if [[ $uname == "" ]];then
 	bash /usr/local/SSR-Bash-Python/user.sh || exit 0
 fi
+while :;do
+	uport=$(rand 1000 65535)
+	port=`netstat -anlt | awk '{print $4}' | sed -e '1,2d' | awk -F : '{print $NF}' | sort -n | uniq | grep "$uport"`
+	if [[ -z ${port} ]];then
+		break
+	fi
+done
 read -p "输入密码： " upass
-um1="none"
-ux1="auth_chain_a"
-uo1="tls1.2_ticket_auth"
 while :; do echo
 	read -p "输入流量限制(只需输入数字，单位：GB)： " ut
 	if [[ "$ut" =~ ^(-?|\+?)[0-9]+(\.?[0-9]+)?$ ]];then
@@ -52,9 +64,13 @@ while :; do echo
 	   echo 'Input Error!'
 	fi
 done
-iflimitspeed="y"
-us="2048"
-
+if [[ ${iflimittime} == y ]]; then
+	bash /usr/local/SSR-Bash-Python/timelimit.sh a ${uport} ${limit}
+	datelimit=$(cat /usr/local/SSR-Bash-Python/timelimit.db | grep "${uport}:" | awk -F":" '{ print $2 }' | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9}\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1年\2月\3日 \4:/')
+fi
+if [[ -z ${datelimit} ]]; then
+	datelimit="永久"
+fi
 #Set Firewalls
 if [[ ${OS} =~ ^Ubuntu$|^Debian$ ]];then
 	iptables-restore < /etc/iptables.up.rules
@@ -109,4 +125,5 @@ echo "协议: $ux1"
 echo "混淆方式: $uo1"
 echo "流量: $ut GB"
 echo "允许连接数: 不限"
+echo "帐号有效期: $datelimit"
 echo "===================="

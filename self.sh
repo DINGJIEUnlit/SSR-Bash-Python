@@ -10,7 +10,7 @@ updateme(){
 	if [[ -e ~/version.txt ]];then
 		rm -f ~/version.txt
 	fi
-	wget -q https://raw.githubusercontent.com/Readour/AR-B-P-B/master/version.txt
+	wget -q https://github.com/DINGJIEUnlit/SSR-Bash-Python/raw/master/version.txt
 	version1=`cat ~/version.txt`
 	version2=`cat /usr/local/SSR-Bash-Python/version.txt`
 	if [[ "$version1" == "$version2" ]];then
@@ -22,7 +22,7 @@ updateme(){
 		read -n 1 yn
 		if [[ $yn == [Yy] ]];then
 			export yn=n
-			wget -q -N --no-check-certificate https://raw.githubusercontent.com/Readour/AR-B-P-B/master/install.sh && bash install.sh
+			wget -q -N --no-check-certificate https://github.com/DINGJIEUnlit/SSR-Bash-Python/raw/master/install.sh && bash install.sh
 			sleep 3s
 			clear
 			ssr || exit 0
@@ -39,17 +39,116 @@ sumdc(){
 	echo -e "请输入\e[32;49m $sum1-$sum2 \e[0m的运算结果,表示你已经确认,输入错误将退出"
 	read sv
 }
-
+backup(){
+	echo "开始备份!"
+	mkdir -p ${HOME}/backup/tmp
+	cd ${HOME}/backup/tmp
+	cp /usr/local/shadowsocksr/mudb.json ./
+	if [[ -e /usr/local/SSR-Bash-Python/check.log ]];then
+		cp /usr/local/SSR-Bash-Python/check.log ./
+	fi
+	if [[ -e /usr/local/SSR-Bash-Python/timelimit.db ]];then
+		cp /usr/local/SSR-Bash-Python/timelimit.db ./
+	fi
+	netstat -anlt | awk '{print $4}' | sed -e '1,2d' | awk -F : '{print $NF}' | sort -n | uniq >> ./port.conf
+	wf=`ls | wc -l`
+	if [[ $wf -ge 2 ]];then
+		tar -zcvf ../ssr-conf.tar.gz ./*
+	fi
+	cd ..
+	if [[ -e ./ssr-conf.tar.gz ]];then
+		rm -rf ./tmp
+		echo "备份成功,文件位于${HOME}/backup/ssr-conf.tar.gz"
+	else
+		echo "备份失败"
+	fi
+}
+recover(){
+mkdir -p ${HOME}/backup 
+echo "这将会导致你现有的配置被覆盖"
+sumdc
+if [[ "$sv" == "$solve" ]];then
+    bakf=$(ls ${HOME}/backup | wc -l)
+    if [[ ${bakf} != 1 ]];then
+        cd /usr/local/SSR-Bash-Python/Explorer 
+        if [[ ! -e /bin/usleep  ]];then
+            gcc -o /bin/usleep ./usleep.c
+        fi
+        read -p "未发现备份文件或者存在多个备份文件，请手动选择（按Y键将打开一个文件管理器）" yn
+        if [[ ${yn} == [Yy] ]];then
+            chmod +x /usr/local/SSR-Bash-Python/Explorer/*
+            bash ./Explorer.sh "${HOME}/backup"
+	    chmod -x /usr/local/SSR-Bash-Python/Explorer/*
+            bakfile=$(cat /tmp/BakFilename.tmp)
+            if [[ ! -e ${bakfile} ]];then
+                echo "无效!"
+            fi
+        fi
+    fi
+	if [[ -z ${bakfile} ]];then
+		bakfile=${HOME}/backup/ssr-conf.tar.gz 
+	fi
+	if [[ -e ${bakfile} ]];then
+        cd ${HOME}/backup
+		tar -zxvf ${bakfile} -C ./
+		if [[ -e ./check.log ]];then
+			mv ./check.log /usr/local/SSR-Bash-Python/check.log
+		fi
+		if [[ -e /usr/local/SSR-Bash-Python/timelimit.db ]];then
+			mv ./timelimit.db /usr/local/SSR-Bash-Python/timelimit.db
+		fi
+		if [[ ${OS} =~ ^Ubuntu$|^Debian$ ]];then
+			iptables-restore < /etc/iptables.up.rules
+			for port in `cat ./port.conf`; do iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport $port -j ACCEPT ; done
+			for port in `cat ./port.conf`; do iptables -I INPUT -m state --state NEW -m udp -p udp --dport $port -j ACCEPT ; done
+			iptables-save > /etc/iptables.up.rules
+			iptables -vnL
+		fi
+		if [[ ${OS} == CentOS ]];then
+			if [[ $CentOS_RHEL_version == 7 ]];then
+				iptables-restore < /etc/iptables.up.rules
+				for port in `cat ./port.conf`; do iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport $port -j ACCEPT ; done
+				for port in `cat ./port.conf`; do iptables -I INPUT -m state --state NEW -m udp -p udp --dport $port -j ACCEPT ; done
+				iptables-save > /etc/iptables.up.rules
+				iptables -vnL
+			else
+				for port in `cat ./port.conf`; do iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport $port -j ACCEPT ; done 
+				for port in `cat ./port.conf`; do iptables -I INPUT -m state --state NEW -m udp -p udp --dport $port -j ACCEPT ; done
+				/etc/init.d/iptables save
+				/etc/init.d/iptables restart
+				iptables -vnL && sed -i '5a#tcp port rule' /etc/sysconfig/iptables
+			fi
+		fi
+		rm -f /usr/local/shadowsocksr/mudb.json
+		mv ./mudb.json /usr/local/shadowsocksr/mudb.json
+		rm -f ./port.conf
+		echo "还原操作已完成，开始检测是否已生效!"
+		bash /usr/local/SSR-Bash-Python/servercheck.sh test
+		if [[ -z ${SSRcheck} ]];then
+			echo "配置已生效，还原成功"
+		else
+			echo "配置未生效，还原失败，请联系作者解决"
+		fi
+		rm /tmp/BakFilename.tmp
+	else
+		echo "备份文件不存在，请检查！"
+	fi
+else
+	echo "计算错误，正确结果为$solve"
+fi
+}
 #Show
 echo "输入数字选择功能："
 echo ""
 echo "1.检查更新"
-echo "2.切换到开发版"
+echo "2.重新安装"
 echo "3.程序自检"
 echo "4.卸载程序"
+echo "5.备份配置"
+echo "6.还原配置"
 while :; do echo
 	read -p "请选择： " choice
-	if [[ ! $choice =~ ^[1-4]$ ]]; then
+	if [[ ! $choice =~ ^[1-6]$ ]]; then
 		[ -z "$choice" ] && ssr && break
 		echo "输入错误! 请输入正确的数字!"
 	else
@@ -61,10 +160,9 @@ if [[ $choice == 1 ]];then
 	updateme
 fi
 if [[ $choice == 2 ]];then
-	echo "切换到开发版之后你将面临一些奇怪的问题"
 	sumdc
 	if [[ "$sv" == "$solve" ]];then
-		wget -q -N --no-check-certificate https://raw.githubusercontent.com/Readour/AR-B-P-B/master/install.sh && bash install.sh develop
+		wget -q -N --no-check-certificate https://github.com/DINGJIEUnlit/SSR-Bash-Python/raw/master/install.sh && bash install.sh
 		sleep 3s
 		clear
 		ssr || exit 0
@@ -80,11 +178,25 @@ if [[ $choice == 4 ]];then
 	echo "你在做什么？你真的这么狠心吗？"
 	sumdc
 	if [[ "$sv" == "$solve" ]];then
-		wget -q -N --no-check-certificate https://raw.githubusercontent.com/Readour/AR-B-P-B/master/install.sh && bash install.sh uninstall
+		wget -q -N --no-check-certificate https://github.com/DINGJIEUnlit/SSR-Bash-Python/raw/master/install.sh && bash install.sh uninstall
 		exit 0
 	else
 		echo "计算错误，正确结果为$solve"
 		bash /usr/local/SSR-Bash-Python/self.sh
 	fi
+fi
+if [[ $choice == 5 ]];then
+	if [[ ! -e ${HOME}/backup/ssr-conf.tar.gz ]];then
+		backup
+	else
+		cd ${HOME}/backup
+		mv ./ssr-conf.tar.gz ./ssr-conf-`date +%Y-%m-%d_%H:%M:%S`.tar.gz
+		backup
+	fi
+	bash /usr/local/SSR-Bash-Python/self.sh
+fi
+if [[ $choice == 6 ]];then
+	recover
+	bash /usr/local/SSR-Bash-Python/self.sh
 fi
 exit 0

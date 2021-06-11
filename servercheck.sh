@@ -44,6 +44,7 @@ um1="chacha20"
 ux1="auth_chain_a"
 uo1="tls1.2_ticket_auth"
 uparam="1"
+maxsize="$((1024*1024))"
 
 #Function
 mades(){
@@ -92,8 +93,23 @@ rand(){
 }
 
 dothetest(){
+        if [[ ! -e ${log_file} ]];then
+	        echo "配置文件不存在，失败！"
+                exit 1
+        fi
 	nowdate=`date '+%Y-%m-%d %H:%M:%S'`
-	echo -e "========== 开始记录测试信息[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
+	filesize=`ls -l $log_file | awk '{ print $5 }'`
+	#email=`cat ${log_file} | head -n 6 | tail -n 1 | awk -F" = " '{ print $2 }'`
+	echo -e "========== 开始记录测试信息[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n" >> ${log_file}
+	if [ $filesize -gt $maxsize ];then
+		echo "日志文件大小已达到上限，开始自动转储！" | tee -a ${log_file}
+		tar -cjf servercheck"`date +%Y-%m-%d_%H:%M:%S`".tar.bz2 $log_file
+		logset=`cat ${log_file} | head -n 6`
+		rm -f ${log_file}
+		echo "$logset" >> ${log_file}
+		echo -e "========== 开始记录测试信息[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n" >> ${log_file}
+		echo "转储完成!"
+	fi
 	local_port=$(rand)
 	passwd=`cat ${log_file} | head -n 2 | tail -n 1 | awk -F" = " '{ print $2 }'`
 	ip=`cat ${log_file} | head -n 4 | tail -n 1 | awk -F" = " '{ print $2 }'`
@@ -103,7 +119,8 @@ dothetest(){
 	if [[ -z ${PID} ]]; then
 		echo "ShadowsocksR客户端 启动失败，无法连接到服务器!" | tee -a ${log_file}
 		echo "开始重启服务" | tee -a ${log_file}
-		wall "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}"
+		export SSRcheck=Error
+		#echo "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}" | mutt -s "[Warning]SSR-Bash-Python" ${email}
 		bash /usr/local/shadowsocksr/stop.sh
 		bash /usr/local/shadowsocksr/logrun.sh
 		iptables-restore < /etc/iptables.up.rules
@@ -127,7 +144,14 @@ dothetest(){
 					bash /usr/local/shadowsocksr/logrun.sh
 					iptables-restore < /etc/iptables.up.rules
 					echo "服务已重启!" | tee -a ${log_file}
-					wall "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}"
+					Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
+					if [[ -z ${Test_results} ]];then
+						export SSRcheck=Error
+						echo "连接失败!" | tee -a ${log_file}
+					else
+						echo "连接成功！" | tee -a ${log_file}
+					fi
+					#echo "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}" | mutt -s "[Warning]SSR-Bash-Python" ${email}
 				else
 					echo "连接成功！" | tee -a ${log_file}
 				fi
@@ -141,7 +165,8 @@ dothetest(){
 		PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
 		if [[ ! -z ${PID} ]]; then
 			echo "ShadowsocksR客户端 停止失败，请检查 !" | tee -a ${log_file}
-			wall "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}"
+			export SSRcheck=Error
+			#echo "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}" | mutt -s "[Warning]SSR-Bash-Python" ${email}
 		fi
 		echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${log_file}
 	fi
@@ -158,11 +183,11 @@ if [[ ! -e ${log_file} ]];then
 		read everytime
 		if [[ -z ${everytime} ]];then
 			everytime="30"
-			if [[ ! ${everytime} =~ ^(-?|\+?)[0-9]+(\.?[0-9]+)?$ ]];then
-				echo "请输入正确的数字"
-			else
-				break
-			fi
+			break
+		elif [[ ! ${everytime} =~ ^(-?|\+?)[0-9]+(\.?[0-9]+)?$ ]];then
+			echo "请输入正确的数字"
+		else
+			break
 		fi
 	done
 	while :;do echo
@@ -197,7 +222,12 @@ fi
 runloop(){
 	while :
 	do
-		main
+		if [[ -e ${log_file} ]];then
+			main
+		else
+			echo "尚未配置，退出"
+			break
+		fi
 	done
 }
 
@@ -207,14 +237,6 @@ if [[ $1 == "" ]];then
 	echo "========================================="
 	echo -e "You can running\e[32;49m servercheck.sh conf \e[0mto configure the program.\nAfter they run you should run\e[32;49m nohup servercheck.sh running \e[0mto hang up it."
 	echo -e "If you want to stop running this program.You should running \e[32;49m servercheck.sh stop \e[0m to stop it."
-fi
-if [[ $1 == m ]];then
-	if [[ -e ${log_file} ]];then
-		main
-	else
-		echo "没有找到配置文件！"
-		exit 1
-	fi
 fi
 if [[ $1 == stop ]];then
 	thetime=`cat ${log_file} | head -n 5 | tail -n 1 | awk -F" = " '{ print $2 }'`
@@ -244,9 +266,21 @@ if [[ $1 == conf ]];then
 fi
 if [[ $1 == reconf ]];then
 	rm -f ${log_file}
+	cd /usr/local/shadowsocksr
+	python mujson_mgr.py -d -u $uname
+	cd ${pwd}
 	main
 fi
 if [[ $1 == log ]];then
 	cat ${log_file}
 	exit 0
+fi
+if [[ $1 == test ]];then
+	PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
+	if [[ -z ${PID} ]];then
+		dothetest
+	else
+		sleep 5s
+		dothetest
+	fi
 fi

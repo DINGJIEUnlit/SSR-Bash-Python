@@ -18,7 +18,7 @@ for x in json:
   if(transfer_enable_int > 1024):
   	transfer_enable_int = transfer_enable_int/1024
   	transfer_unit = "GB"
-  if(transfer_enable_int > 1024):
+  if(d_int > 1024):
   	d_int = d_int/1024
   	d_unit = "GB"
 
@@ -26,4 +26,3 @@ for x in json:
   print "%s\t%s\t%d%s\t\t%d%s" %(x[u"user"],x[u"port"],d_int,d_unit,transfer_enable_int,transfer_unit)
 
 f.close();
-

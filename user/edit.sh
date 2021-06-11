@@ -30,7 +30,18 @@ else
 echo "${CFAILURE}Does not support this OS, Please contact the author! ${CEND}"
 kill -9 $$
 fi
-
+uqr(){
+	username=`python mujson_mgr.py -l -u $uid | head -n 2 | tail -n 1 | awk -F" : " '{ print $2 }'`
+	if [[ -e ~/SSRQR/$username.png ]];then
+		bash /usr/local/SSR-Bash-Python/user/qrcode.sh u $uid
+	fi
+}
+pqr(){
+	username=`python mujson_mgr.py -l -p $uid | head -n 2 | tail -n 1 | awk -F" : " '{ print $2 }'`
+	if [[ -e ~/SSRQR/$username.png ]];then
+		bash /usr/local/SSR-Bash-Python/user/qrcode.sh p $uid
+	fi
+}
 echo "1.使用用户名"
 echo "2.使用端口"
 echo ""
@@ -48,12 +59,24 @@ done
 if [[ $lsid == 1 ]];then
 	read -p "输入用户名： " uid
 	cd /usr/local/shadowsocksr
-	python mujson_mgr.py -l -u $uid
+	checkuid=$(python mujson_mgr.py -l -u $uid 2>/dev/null)
+	if [[ -z ${checkuid} ]];then
+		echo "用户不存在！"
+		bash /usr/local/SSR-Bash-Python/edit.sh || exit 0
+	else
+		python mujson_mgr.py -l -u $uid
+	fi
 fi
 if [[ $lsid == 2 ]];then
 	read -p "输入端口号： " uid
 	cd /usr/local/shadowsocksr
-	python mujson_mgr.py -l -p $uid
+	checkuid=$(python mujson_mgr.py -l -p $uid 2>/dev/null)
+	if [[ -z ${checkuid} ]];then
+		echo "用户不存在！"
+		bash /usr/local/SSR-Bash-Python/edit.sh || exit 0
+	else
+		python mujson_mgr.py -l -p $uid
+	fi
 fi
 
 echo "1.修改密码"
@@ -66,11 +89,14 @@ echo "7.修改流量"
 echo "8.修改端口限制"
 echo "9.修改总端口限速"
 echo "10.修改连接数限制"
+echo "11.修改时限"
 
 while :; do echo
 	read -p "请选择： " ec
 	if [[ ! $ec =~ ^[1-9]$ ]]; then
 		if [[ $ec == 10 ]]; then
+			break
+		elif [[ $ec == 11 ]]; then
 			break
 		fi
 		echo "输入错误! 请输入正确的数字!"
@@ -86,11 +112,13 @@ if [[ $ec == 1 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -u $uid -k $upass
 		echo "用户名为 $uid 的用户密码已设置成 $upass"
+		uqr
 	fi
 	if [[ $lsid == 2 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -p $uid -k $upass
 		echo "端口号为 $uid 的用户密码已设置成 $upass"
+		pqr
 	fi
 fi
 if [[ $ec == 2 ]];then
@@ -145,11 +173,13 @@ if [[ $ec == 2 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -u $uid -m $um1
 		echo "用户名为 $uid 的加密方式已切换为 $um1"
+		uqr
 	fi
 	if [[ $lsid == 2 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -p $uid -m $um1
 		echo "端口号为 $uid 的加密方式已切换为 $um1"
+		pqr
 	fi
 fi
 if [[ $ec == 3 ]];then
@@ -160,9 +190,16 @@ if [[ $ec == 3 ]];then
 	echo '4.auth_aes128_sha1'
 	echo '5.verify_deflate'
 	echo '6.auth_chain_a'
+	echo '7.auth_chain_b'
+	echo '8.auth_chain_c'
+	echo '9.auth_chain_d'
+	echo '10.auth_chain_e'
 	while :; do echo
 	read -p "输入协议方式： " ux
-	if [[ ! $ux =~ ^[1-6]$ ]]; then
+	if [[ ! $ux =~ ^[1-9]$ ]]; then
+		if [[ $ux == 10 ]]; then
+			break
+		fi
 		echo "输入错误! 请输入正确的数字!"
 	else
 		break	
@@ -198,6 +235,18 @@ if [[ $ec == 3 ]];then
 	if [[ $ux == 6 ]];then
 		ux1="auth_chain_a"
 	fi
+	if [[ $ux == 7 ]];then
+		ux1="auth_chain_b"
+	fi
+	if [[ $ux == 8 ]];then
+		ux1="auth_chain_c"
+	fi
+	if [[ $ux == 9 ]];then
+		ux1="auth_chain_d"
+	fi
+	if [[ $ux == 10 ]];then
+		ux1="auth_chain_e"
+	fi
 
 	if [[ $ifprotocolcompatible == y ]]; then
 		ux1=${ux1}"_compatible"
@@ -208,11 +257,13 @@ if [[ $ec == 3 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -u $uid -O $ux1
 		echo "用户名为 $uid 的协议方式已更改为 $ux1"
+		uqr
 	fi
 	if [[ $lsid == 2 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -p $uid -O $ux1
 		echo "端口号为 $uid 的协议方式已更改为 $ux1"
+		pqr
 	fi
 fi
 if [[ $ec == 4 ]];then
@@ -312,11 +363,13 @@ if [[ $ec == 7 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -u $uid -t $ut
 		echo "用户名为 $uid 的流量限制已改为 $ut"
+		uqr
 	fi
 	if [[ $lsid == 2 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -p $uid -t $ut
 		echo "端口号为 $uid 的流量限制已改为 $ut"
+		pqr
 	fi
 fi
 if [[ $ec == 8 ]];then
@@ -348,17 +401,19 @@ if [[ $ec == 9 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -u $uid -S $us
 		echo "用户名为 $uid 的用户端口限速已修改为 $us KB/s"
+		uqr
 	fi
 	if [[ $lsid == 2 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -p $uid -S $us
 		echo "端口号为 $uid 的用户端口限速已修改为 $us KB/s"
+		pqr
 	fi
 fi
-
+ 
 if [[ $ec == 10 ]];then
 	while :; do echo
-		echo "注意：auth_* 系列协议 不兼容原版才有效 "
+		echo "注意：auth_* 系列协议 不兼容原版才有效"
 		read -p "输入允许的连接数(建议最少 2个)： " uparam
 		if [[ "$uparam" =~ ^(-?|\+?)[0-9]+(\.?[0-9]+)?$ ]];then
 	   		break
@@ -370,10 +425,47 @@ if [[ $ec == 10 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -u $uid -G $uparam
 		echo "用户名为 $uid 的允许的连接数已修改为 $uparam "
+		uqr
 	fi
 	if [[ $lsid == 2 ]];then
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -e -p $uid -G $uparam
 		echo "端口号为 $uid 的允许的连接数已修改为 $uparam "
+		pqr
 	fi
+fi
+
+if [[ $ec == 11 ]];then
+	userlimit="/usr/local/SSR-Bash-Python/timelimit.db"
+	if [[ ${lsid} == 1 ]];then
+		port=$(python mujson_mgr.py -l -u ${uid} | grep "port :" | awk -F" : " '{ print $2 }')
+		datelimit=$(cat ${userlimit} | grep "${port}:" | awk -F":" '{ print $2 }' | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9}\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1年\2月\3日 \4:/')
+		if [[ -z ${datelimit} ]];then
+			datelimit="永久"
+		fi
+		echo -e "当前用户端口号：${port},有效期至：${datelimit}\n"
+		read -p "请输入新的有效期(单位：月[m]日[d]小时[h],例如：1个月就输入1m){默认：永久[a]}: " limit
+		if [[ -z ${limit} ]];then
+			limit="a"
+		fi
+		bash /usr/local/SSR-Bash-Python/timelimit.sh e ${port} ${limit} 
+	fi
+	if [[ ${lsid} == 2 ]];then
+		datelimit=$(cat ${userlimit} | grep "${uid}:" | awk -F":" '{ print $2 }' | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9}\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1年\2月\3日 \4:/')
+		if [[ -z ${datelimit} ]];then
+			datelimit="永久"
+		fi
+		echo -e "当前用户端口号：${uid},有效期至：${datelimit}\n"
+		read -p "请输入新的有效期(单位：月[m]日[d]小时[h],例如：1个月就输入1m){默认：永久[a]}: " limit
+		if [[ -z ${limit} ]];then
+			limit="a"
+		fi
+		bash /usr/local/SSR-Bash-Python/timelimit.sh e ${uid} ${limit}
+		port=${uid}
+	fi
+	datelimit=$(cat ${userlimit} | grep "${port}:" | awk -F":" '{ print $2 }' | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9}\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1年\2月\3日 \4:/')
+	if [[ -z ${datelimit} ]];then
+		datelimit="永久"
+	fi
+	echo -e "修改成功!当前用户端口号：${port},新的有效期至：${datelimit}\n"
 fi

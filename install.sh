@@ -239,10 +239,6 @@ if [[ $? != 0 ]];then
     echo "安装失败，请稍候重试！"
     exit 1 
 fi
-if [[ ! -e /usr/share/dict/words ]];then
-    cd /usr/share/dict
-    wget -q https://down.fdos.me/words
-fi
 #Install Libsodium
 libsodiumfilea="/usr/local/lib/libsodium.so"
 libsodiumfileb="/usr/lib/libsodium.so"
@@ -267,13 +263,14 @@ else
 #    fi
 fi
 cd /usr/local
-git clone https://git.fdos.me/stack/shadowsocksr.git
+git clone https://github.com/DINGJIEUnlit/shadowsocksr.git
 cd ./shadowsocksr
-git checkout manyuser
-git pull
-if [[ $1 == "develop" ]];then
-    git checkout stack/dev
-fi
+#git checkout manyuser
+#git pull
+#if [[ $1 == "develop" ]];then
+    git checkout dev
+    git pull
+#fi
 fi
 
 #Install SSR and SSR-Bash
@@ -332,16 +329,16 @@ do
         mv /usr/local/shadowsocksr/mudb.json /usr/local/mudb.json
         rm -rf /usr/local/shadowsocksr
         cd /usr/local
-        git clone https://git.fdos.me/stack/shadowsocksr.git
-        if [[ $1 == develop ]];then
+        git clone https://github.com/DINGJIEUnlit/shadowsocksr.git
+#        if [[ $1 == develop ]];then
             cd ./shadowsocksr
-            git checkout stack/dev
+            git checkout dev
             rm -f ./mudb.json
             mv ../mudb.json ./mudb.json
-        else
-            rm -f ./shadowsocksr/mudb.json
-            mv /usr/local/mudb.json /usr/local/shadowsocksr/mudb.json
-        fi
+#        else
+#            rm -f ./shadowsocksr/mudb.json
+#            mv /usr/local/mudb.json /usr/local/shadowsocksr/mudb.json
+#        fi
     fi
 	echo "开始更新"
 	sleep 1s
@@ -351,33 +348,34 @@ do
 	echo "开始部署"
 	cd /usr/local/shadowsocksr
 	git pull
-    git checkout manyuser
-    if [[ $1 == "develop" ]];then
-        git checkout stack/dev
-    fi
+#    git checkout manyuser
+#    if [[ $1 == "develop" ]];then
+        git checkout dev
+#    fi
 fi
 if [[ -d /usr/local/SSR-Bash-Python ]];then
     if [[ $yn == [yY] ]];then
         rm -rf /usr/local/SSR-Bash-Python
         cd /usr/local
-        git clone https://git.fdos.me/stack/AR-B-P-B.git
-        mv AR-B-P-B SSR-Bash-Python
+        git clone https://github.com/DINGJIEUnlit/SSR-Bash-Python.git
+#        mv AR-B-P-B SSR-Bash-Python
     fi
     cd /usr/local/SSR-Bash-Python
     git checkout master
     git pull
-    if [[ $1 == "develop" ]];then
-        git checkout develop
-        git pull
-    fi
+#    if [[ $1 == "develop" ]];then
+#        git checkout develop
+#        git pull
+#    fi
 else
     cd /usr/local
-    git clone https://git.fdos.me/stack/AR-B-P-B.git
-    cd AR-B-P-B
+    git clone https://github.com/DINGJIEUnlit/SSR-Bash-Python.git
+#    cd AR-B-P-B
+    cd /usr/local/SSR-Bash-Python
     git checkout master
-    if [[ $1 == "develop" ]];then
-        git checkout develop
-    fi
+#    if [[ $1 == "develop" ]];then
+#        git checkout develop
+#    fi
     cd ..
     mv AR-B-P-B SSR-Bash-Python
     bashinstall="no"
@@ -470,13 +468,13 @@ EOF
 fi
 fi
 #Install SSR-Bash Background
-if [[ $1 == "develop" ]];then
-	wget -q -N --no-check-certificate -O /usr/local/bin/ssr https://git.fdos.me/stack/AR-B-P-B/raw/develop/ssr
+#if [[ $1 == "develop" ]];then
+#	wget -q -N --no-check-certificate -O /usr/local/bin/ssr https://github.com/DINGJIEUnlit/AR-B-P-B/raw/develop/ssr
+#	chmod +x /usr/local/bin/ssr
+#else
+	wget -q -N --no-check-certificate -O /usr/local/bin/ssr https://github.com/DINGJIEUnlit/SSR-Bash-Python/raw/master/ssr
 	chmod +x /usr/local/bin/ssr
-else
-	wget -q -N --no-check-certificate -O /usr/local/bin/ssr https://git.fdos.me/stack/AR-B-P-B/raw/master/ssr
-	chmod +x /usr/local/bin/ssr
-fi
+#fi
 
 #Modify ShadowsocksR API
 sed -i "s/sspanelv2/mudbjson/g" /usr/local/shadowsocksr/userapiconfig.py
@@ -552,8 +550,6 @@ echo "若安装出现异常，或安装完成后无法使用，请手动执行ba
 if [[ ${check} != "yes" ]] ;then
         echo "如果你执行 ssr 提示找不到命令，请尝试退出并重新登录来解决"
 fi
-echo '原作者已经停止本脚本更新，此版本为作者删除项目前最后一个版本魔改而来'
-echo '不喜勿喷!'
 echo '谨慎使用！仅供研究！'
 echo '谨慎使用！仅供研究！'
 echo '谨慎使用！仅供研究！'

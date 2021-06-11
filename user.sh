@@ -11,12 +11,18 @@ echo '3.删除用户'
 echo '4.修改用户'
 echo '5.显示用户流量信息'
 echo '6.显示用户名端口信息'
+echo '7.查看端口用户连接状况'
+echo '8.生成用户二维码'
+echo '9.为已有帐号添加有效期'
 echo "直接回车返回上级菜单"
 
 while :; do echo
 	read -p "请选择： " userc
-	[ -z "$userc" ] && ssr && break
-	if [[ ! $userc =~ ^[1-6]$ ]]; then
+        if [[ -z "$userc" ]];then  
+                ssr
+                break
+        fi
+	if [[ ! $userc =~ ^[1-9]$ ]]; then
 		echo "输入错误! 请输入正确的数字!"
 	else
 		break	
@@ -74,7 +80,100 @@ if [[ $userc == 5 ]];then
 fi
 
 if [[ $userc == 6 ]];then
-	python /usr/local/SSR-Bash-Python/user/show_all_user_info.py
+	P_V=`python -V 2>&1 | awk '{print $2}'`
+	P_V1=`python -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $1}'`
+	if [[ ${P_V1} == 3 ]];then
+		echo "你当前的python版本不支持此功能"
+		echo "当前版本：${P_V} ,请降级至2.x版本"
+	else
+		python /usr/local/SSR-Bash-Python/user/show_all_user_info.py
+	fi
 	echo ""
 	bash /usr/local/SSR-Bash-Python/user.sh
 fi
+
+if [[ $userc == 7 ]];then
+	read -p "请输入用户端口号:  " uid
+	if [[ "$uid" =~ ^(-?|\+?)[0-9]+(\.?[0-9]+)?$ ]];then
+		port=`netstat -anlt | awk '{print $4}' | sed -e '1,2d' | awk -F : '{print $NF}' | sort -n | uniq | grep "$uid"`
+		if [[ -z ${port} ]];then
+			echo "该端口号不存在"
+			sleep 2s
+			bash /usr/local/SSR-Bash-Python/user.sh
+		else
+			n=$(netstat -ntu | grep :${uid} | grep  "ESTABLISHED" | awk '{print $5}' | cut -d : -f 1 | sort -u | wc -l)
+			echo -e "当前端口号 \e[41;37m${uid}\e[0m 共有 \e[42;37m${n}\e[0m 位用户连接"
+			for ips in `netstat -ntu | grep :${uid} | grep  "ESTABLISHED" | awk '{print $5}' | cut -d : -f 1 | sort -u`
+			do
+				curl ip.cn/${ips}
+			done
+			echo "你可以输入IP地址，将其加入黑名单，这将不能撤销（按回车键返回）"
+			while : 
+			do
+				read ip
+				if [[ -z ${ip} ]];then
+					break
+				fi
+				regex="\b(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[1-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[1-9])\b"
+				ckStep2=$(echo $ip | egrep $regex | wc -l)
+				if [[ $ckStep2 -eq 0 ]];then
+					echo "无效的ip地址"
+					echo "请重新输入"
+				else
+					break
+				fi
+			done
+			if [[ -z ${ip} ]];then
+				bash /usr/local/SSR-Bash-Python/user.sh
+				exit 0
+			fi
+			banip=$(iptables --list-rules | grep 'DROP' | grep -E -o "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)" | grep "$ip")
+			if [[ ! -z ${banip} ]];then
+				echo "IP地址 ${ip} 已存在于禁封列表，请勿再次执行！"
+				echo "当前封禁列表:"
+				iptables --list-rules | grep 'DROP' | grep -E -o "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)" | sort | uniq -c | sort -nr 
+				bash /usr/local/SSR-Bash-Python/user.sh
+				exit 0
+			fi
+			rsum=`date +%s%N | md5sum | head -c 6`
+			echo -e "在下面输入\e[31;49m $rsum \e[0m表示您确定将IP：${ip}加入黑名单,这目前是不能恢复的"
+			read -n 6 -p "请输入： " choise
+			if [[ $choise == $rsum ]];then
+				if [[ ${OS} =~ ^Ubuntu$|^Debian$ ]];then
+					iptables-restore < /etc/iptables.up.rules
+					iptables -A INPUT -s ${ip} -j DROP
+					iptables-save > /etc/iptables.up.rules
+				fi
+				if [[ ${OS} == CentOS ]];then
+					if [[ $CentOS_RHEL_version == 7 ]];then
+						iptables-restore < /etc/iptables.up.rules
+						iptables -A INPUT -s ${ip} -j DROP
+						iptables-save > /etc/iptables.up.rules
+					else
+						iptables -A INPUT -s ${ip} -j DROP
+						/etc/init.d/iptables save
+						/etc/init.d/iptables restart
+					fi
+				fi
+				echo "当前封禁列表:"
+				iptables --list-rules | grep 'DROP' | grep -E -o "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)" | sort | uniq -c | sort -nr
+			else
+				echo "输入错误"
+				sleep 2s
+			fi
+		fi
+	fi
+	bash /usr/local/SSR-Bash-Python/user.sh
+fi
+
+if [[ $userc == 8 ]];then
+	bash /usr/local/SSR-Bash-Python/user/qrcode.sh
+	echo ""
+	bash /usr/local/SSR-Bash-Python/user.sh
+fi
+
+if [[ $userc == 9 ]];then
+	bash /usr/local/SSR-Bash-Python/timelimit.sh a
+	bash /usr/local/SSR-Bash-Python/user.sh
+fi
+exit 0
