@@ -69,7 +69,7 @@ echo "测试区域，请勿随意使用"
 echo "1.更新SSR-Bsah"
 echo "2.一键封禁BT下载，SPAM邮件流量（无法撤销）"
 echo "3.防止暴力破解SS连接信息 (重启后失效)"
-echo "4.布署ss-panel(有风险!)"
+echo "4.布署网络加速"
 echo "5.BBR 控制台"
 echo "6.锐速 控制台"
 echo "7.LotServer 控制台"
@@ -107,14 +107,11 @@ fi
 if [[ $devc == 4 ]];then
 	#代码来自：https://91vps.us/2017/08/24/ss-panel-v3-mod/
 	rsum=`date +%s%N | md5sum | head -c 6`
-	echo "您即将部署ss-panel，整个过程时间较长，并且存在风险,请保证你的系统纯净"
-	echo "为避免意外断线导致安装中断，推荐在screen中运行"
-	echo "安装脚本非本人所写，来源：https://github.com/mmmwhy/ss-panel-and-ss-py-mu/blob/master/ss-panel-v3-mod.sh"
-	echo "默认账号：91vps    默认密码：91vps"
+	echo "您即将布署网络加速"
 	echo -e "在下面输入\e[31;49m $rsum \e[0m表示您已知晓风险并同意安装，输入其它内容将退出安装！"
 	read -n 6 -p "请输入： " choise
 	if [[ $choise == $rsum ]];then
-		wget -q -N --no-check-certificate https://raw.githubusercontent.com/mmmwhy/ss-panel-and-ss-py-mu/master/ss-panel-v3-mod.sh && chmod +x ss-panel-v3-mod.sh && bash ss-panel-v3-mod.sh
+		wget -q -N --no-check-certificate "https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh" && chmod +x tcp.sh && bash tcp.sh
 	else
 		echo "输入错误，安装退出！"
 		sleep 2s
