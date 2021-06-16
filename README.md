@@ -16,5 +16,6 @@
 
 ## To Do List ##
     
-   1.Reason find for log 'db_transfer.py:177 db stop server at port [xxx] reason: port not exist' in SSR
+   ~~1.Reason find for log 'db_transfer.py:177 db stop server at port [xxx] reason: port not exist' in SSR~~
+   
    2.Admin WEB
