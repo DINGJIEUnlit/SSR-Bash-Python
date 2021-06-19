@@ -36,11 +36,10 @@ servercheck(){
 	echo "3.重启服务"
 	echo "4.查看日志"
 	echo "5.重新配置"
-	echo "6.启动记录"
 	while :; do echo
 		read -p "请选择： " serverch
 		[ -z "$serverch" ] && break
-		if [[ ! $serverch =~ ^[1-6]$ ]]; then
+		if [[ ! $serverch =~ ^[1-5]$ ]]; then
 			echo "输入错误! 请输入正确的数字!"
 		else
 			break
@@ -100,15 +99,6 @@ servercheck(){
 			bash /usr/local/SSR-Bash-Python/servercheck.sh reconf
 			echo "完毕请启动服务"
 			echo ""
-			servercheck
-		fi
-	fi
-		if [[ $serverch == 6 ]];then
-		if [[ -e ${pwd}/state.log ]];then
-			cat ${pwd}/state.log
-			servercheck
-		else
-			echo "没有找到log文件！"
 			servercheck
 		fi
 	fi
