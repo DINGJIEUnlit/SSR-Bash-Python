@@ -116,6 +116,7 @@ dothetest(){
 	ip=`cat ${log_file} | head -n 4 | tail -n 1 | awk -F" = " '{ print $2 }'`
 	nohup python "${ssr_local}/local.py" -b "127.0.0.1" -l "${local_port}" -s "${ip}" -p "${uport}" -k "${passwd}" -m "${um1}" -O "${ux1}" -o "${uo1}" > /dev/null 2>&1 &
 	sleep 2s
+	echo ""${ssr_local}/local.py" -b "127.0.0.1" -l "${local_port}" -s "${ip}" -p "${uport}" -k "${passwd}" -m "${um1}" -O "${ux1}" -o "${uo1}"" >> ${state_file}
 	PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
 	if [[ -z ${PID} ]]; then
 		echo "ShadowsocksR客户端 启动失败，无法连接到服务器!" | tee -a ${log_file}
@@ -131,6 +132,7 @@ dothetest(){
 		dothetest
 	else
 		Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
+		echo "$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")" >> ${state_file}
 		if [[ -z ${Test_results} ]];then
 			echo "第1次连接失败，重试!" | tee -a ${log_file}
 			sleep 2s

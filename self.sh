@@ -146,9 +146,10 @@ echo "3.程序自检"
 echo "4.卸载程序"
 echo "5.备份配置"
 echo "6.还原配置"
+echo "7.更新文件"
 while :; do echo
 	read -p "请选择： " choice
-	if [[ ! $choice =~ ^[1-6]$ ]]; then
+	if [[ ! $choice =~ ^[1-7]$ ]]; then
 		[ -z "$choice" ] && ssr && break
 		echo "输入错误! 请输入正确的数字!"
 	else
@@ -198,5 +199,13 @@ fi
 if [[ $choice == 6 ]];then
 	recover
 	bash /usr/local/SSR-Bash-Python/self.sh
+fi
+if [[ $choice == 7 ]];then
+	rm -rf /usr/local/bin/ssr
+	cd /usr/local/SSR-Bash-Python/
+	git pull
+	wget -N --no-check-certificate -O /usr/local/bin/ssr https://github.com/DINGJIEUnlit/SSR-Bash-Python/raw/master/ssr
+	chmod +x /usr/local/bin/ssr
+	ssr
 fi
 exit 0
