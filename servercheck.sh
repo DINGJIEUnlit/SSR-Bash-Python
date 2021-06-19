@@ -111,7 +111,7 @@ dothetest(){
 		echo -e "========== 开始记录测试信息[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n" >> ${log_file}
 		echo "转储完成!"
 	fi
-	PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
+	PID=$(ps -ef |grep -v grep | grep "server.py" | awk '{print $2}')
 	if [[ -z ${PID} ]]; then
 		echo "进程检测失败" | tee -a ${log_file}
 		echo "PID : ${PID}" | tee -a ${log_file}
@@ -122,12 +122,12 @@ dothetest(){
 		bash /usr/local/shadowsocksr/logrun.sh
 		iptables-restore < /etc/iptables.up.rules
 		echo "服务已重启!" | tee -a ${log_file}
-		echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${log_file}
+		echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n\n" >> ${log_file}
 		sleep 1m
 		dothetest
 	else
 		echo "进程检测完成" | tee -a ${log_file}
-		echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${log_file}
+		echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n\n" >> ${log_file}
 	fi
 }
 
@@ -164,14 +164,14 @@ fi
 }
 
 runloop(){
-    echo -e "========== 服务已启动[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
+    echo -e "========== 服务已启动      [$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${log_file}
 	while :
 	do
 		if [[ -e ${log_file} ]];then
 			main
 		else
 			echo "尚未配置，退出"
-			echo -e "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
+			echo -e "========== 服务已停止      [$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${log_file}
 			break
 		fi
 	done
@@ -197,7 +197,7 @@ if [[ $1 == stop ]];then
 			echo "结束失败"
 		fi
 	fi
-	echo -e "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
+	echo -e "========== 服务已停止      [$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
 fi
 if [[ $1 == hide ]];then
 	values="1"
@@ -219,7 +219,7 @@ if [[ $1 == log ]];then
 	exit 0
 fi
 if [[ $1 == test ]];then
-	PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
+	PID=$(ps -ef |grep -v grep | grep "server.py" | awk '{print $2}')
 	if [[ -z ${PID} ]];then
 		dothetest
 	else
