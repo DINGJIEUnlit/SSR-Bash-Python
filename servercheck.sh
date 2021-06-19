@@ -32,7 +32,7 @@ kill -9 $$
 fi
 
 #Define
-test_URL="https://google.com"
+test_URL="www.google.com"
 Timeout="10"
 ssr_dir="/usr/local/shadowsocksr"
 ssr_local="${ssr_dir}/shadowsocks"
@@ -49,7 +49,7 @@ maxsize="$((1024*1024))"
 
 #Function
 mades(){
-	echo "你是否希望本程序创建一个帐号以供测试使用[Y/N]"
+	echo "本程序需要创建帐号进行连通性测试[Y/N]"
 	read -n 1 yn
 	if [[ $yn == [Yy] ]];then
 		if [[ ${OS} =~ ^Ubuntu$|^Debian$ ]];then
@@ -77,11 +77,11 @@ mades(){
 		cd /usr/local/shadowsocksr
 		python mujson_mgr.py -a -u $uname -p $uport -k $upass -m $um1 -O $ux1 -o $uo1 -G $uparam
 		ssrmsg=`python mujson_mgr.py -l -u $uname | tail -n 1 | sed 's/^[ \t]*//g'`
-		echo "#User add OK!" >> ${log_file}
+		echo "#Test User information" >> ${log_file}
 		echo "#The passwd = $upass" >> ${log_file}
 		echo "#The URL = $ssrmsg" >> ${log_file}
 	else
-		echo "如果不创建帐号，本程序将无法使用"
+		echo "拒绝创建测试账号，退出"
 		uadd="no"
 	fi
 }
@@ -95,7 +95,7 @@ rand(){
 
 dothetest(){
     if [[ ! -e ${log_file} ]];then
-	    echo "配置文件不存在，失败！"
+	    echo "配置文件不存在"
         exit 1
     fi
 	nowdate=`date '+%Y-%m-%d %H:%M:%S'`
@@ -105,7 +105,7 @@ dothetest(){
 	if [ $filesize -gt $maxsize ];then
 		echo "日志文件大小已达到上限，开始自动转储！" | tee -a ${log_file}
 		tar -cjf servercheck"`date +%Y-%m-%d_%H:%M:%S`".tar.bz2 $log_file
-		logset=`cat ${log_file} | head -n 2`
+		logset=`cat ${log_file} | head -n 5`
 		rm -f ${log_file}
 		echo "$logset" >> ${log_file}
 		echo -e "========== 开始记录测试信息[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n" >> ${log_file}
@@ -113,26 +113,79 @@ dothetest(){
 	fi
 	PID=$(ps -ef |grep -v grep | grep "server.py" | awk '{print $2}')
 	if [[ -z ${PID} ]]; then
-		echo "进程检测失败" | tee -a ${log_file}
-		echo "PID : ${PID}" | tee -a ${log_file}
-		echo "开始重启服务" | tee -a ${log_file}
+		echo "检测服务失败" | tee -a ${log_file}
+		echo "服务开始重启" | tee -a ${log_file}
 		export SSRcheck=Error
 		#echo "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}" | mutt -s "[Warning]SSR-Bash-Python" ${email}
 		bash /usr/local/shadowsocksr/stop.sh
 		bash /usr/local/shadowsocksr/logrun.sh
 		iptables-restore < /etc/iptables.up.rules
-		echo "服务已重启!" | tee -a ${log_file}
-		echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n\n" >> ${log_file}
-		sleep 1m
-		dothetest
+		echo "服务重启完成" | tee -a ${log_file}
 	else
-		echo "进程检测完成" | tee -a ${log_file}
-		echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n\n" >> ${log_file}
+		echo "检测服务完成" | tee -a ${log_file}
+	    local_port=$(rand)
+	    passwd=`cat ${log_file} | head -n 2 | tail -n 1 | awk -F" = " '{ print $2 }'`
+		rm -f ${state_file}
+		echo "启动本地测试" | tee -a ${log_file}
+	    nohup python "${ssr_local}/local.py" -b "127.0.0.1" -l "${local_port}" -p "${uport}" -k "${passwd}" -m "${um1}" -O "${ux1}" -o "${uo1}" >> ${state_file} 2>&1 &
+		sleep 2s
+		PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
+		if [[ -z ${PID} ]]; then
+		    echo "本地测试启动失败" | tee -a ${log_file}
+		    export SSRcheck=Error
+		else
+		    echo "本地测试启动成功" | tee -a ${log_file}
+			echo "连接测试开始" | tee -a ${log_file}
+			Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
+			sleep 2s
+			if [[ -z ${Test_results} ]];then
+			    echo "第一次连接失败，重试!" | tee -a ${log_file}
+			    sleep 2s
+			    Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
+				sleep 2s
+				if [[ -z ${Test_results} ]];then
+					echo "第二次连接失败，重试!" | tee -a ${log_file}
+					sleep 2s
+					Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
+					sleep 2s
+					if [[ -z ${Test_results} ]];then
+						echo "第三次连接失败,开始重启服务" | tee -a ${log_file}
+						bash /usr/local/shadowsocksr/stop.sh
+						bash /usr/local/shadowsocksr/logrun.sh
+						iptables-restore < /etc/iptables.up.rules
+						echo "服务已重启!" | tee -a ${log_file}
+						sleep 2s
+						Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
+						sleep 2s
+						if [[ -z ${Test_results} ]];then
+							export SSRcheck=Error
+							echo "连接失败!" | tee -a ${log_file}
+						else
+							echo "连接成功！" | tee -a ${log_file}
+						fi
+					else
+						echo "连接成功！" | tee -a ${log_file}
+					fi
+				else
+					echo "连接成功！" | tee -a ${log_file}
+				fi
+			else
+				echo "连接成功！" | tee -a ${log_file}
+			fi
+			echo "连接测试结束" | tee -a ${log_file}
+		fi
+		kill -9 ${PID}
+		echo "结束本地测试" | tee -a ${log_file}
 	fi
+	echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n\n" >> ${log_file}
 }
 
 main(){
 if [[ ! -e ${log_file} ]];then
+	mades
+	if [[ $uadd == no ]];then
+		exit 1
+	fi
 	while :;do echo 
 	echo "请输入每次检测的间隔时间(单位：分)[默认30]:"
 		read everytime
@@ -152,7 +205,7 @@ if [[ ! -e ${log_file} ]];then
 		exit 0
 	fi
 else
-	thetime=`cat ${log_file} | head -n 1 | tail -n 1 | awk -F" = " '{ print $2 }'`
+	thetime=`cat ${log_file} | head -n 4 | tail -n 1 | awk -F" = " '{ print $2 }'`
 	if [[ -z ${thetime} ]];then
 		rm -f ${log_file}
 		main
