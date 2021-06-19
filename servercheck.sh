@@ -44,6 +44,7 @@ upass=`date +%s | sha256sum | base64 | head -c 32`
 um1="chacha20"
 ux1="auth_chain_a"
 uo1="tls1.2_ticket_auth"
+local_port="1080"
 uparam="1"
 maxsize="$((1024*1024))"
 
@@ -123,7 +124,6 @@ dothetest(){
 		echo "服务重启完成" | tee -a ${log_file}
 	else
 		echo "检测服务完成" | tee -a ${log_file}
-	    local_port=$(rand)
 	    passwd=`cat ${log_file} | head -n 2 | tail -n 1 | awk -F" = " '{ print $2 }'`
 		rm -f ${state_file}
 		echo "启动本地测试" | tee -a ${log_file}
