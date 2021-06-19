@@ -37,6 +37,7 @@ Timeout="10"
 ssr_dir="/usr/local/shadowsocksr"
 ssr_local="${ssr_dir}/shadowsocks"
 log_file="${pwd}/check.log"
+state_file="${pwd}/state.log"
 uname="test"
 uport="1314"
 upass=`date +%s | sha256sum | base64 | head -c 32`
@@ -191,8 +192,11 @@ if [[ ! -e ${log_file} ]];then
 		fi
 	done
 	while :;do echo
-		echo "请输入服务器的IP（不知道的话查一下，不支持域名输入）:"
+		echo "请输入服务器的IP（默认 172.217.160.78 google ip）:"
 		read ip
+		if [[ -z ${ip} ]];then
+			ip="172.217.160.78"
+		fi
 		regex="\b(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[1-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[1-9])\b"
 		ckStep2=`echo $ip | egrep $regex | wc -l`
 		if [[ $ckStep2 -eq 0 ]];then
@@ -220,12 +224,15 @@ fi
 }
 
 runloop(){
+    rm -f ${state_file}
+    echo "========== 服务已启动[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${state_file}
 	while :
 	do
 		if [[ -e ${log_file} ]];then
 			main
 		else
 			echo "尚未配置，退出"
+			echo "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${state_file}
 			break
 		fi
 	done
@@ -252,6 +259,7 @@ if [[ $1 == stop ]];then
 			echo "结束失败"
 		fi
 	fi
+	echo "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${state_file}
 fi
 if [[ $1 == hide ]];then
 	values="1"

@@ -4,14 +4,14 @@ export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 #Check Root
 [ $(id -u) != "0" ] && { echo "Error: You must be root to run this script"; exit 1; }
 
-if [[ -e "/usr/local/SSR-Bash-Python/update.txt" ]];then
+if [[ -e "/usr/local/SSR-Bash-Python/log.txt" ]];then
 	echo ""
-	cat /usr/local/SSR-Bash-Python/update.txt
+	cat /usr/local/SSR-Bash-Python/log.txt
 	read -n 1 -p "任意键退出" any
-	if [[ -e /usr/local/SSR-Bash-Python/oldupdate.txt ]];then
-		rm -f /usr/local/SSR-Bash-Python/oldupdate.txt
+	if [[ -e /usr/local/SSR-Bash-Python/oldlog.txt ]];then
+		rm -f /usr/local/SSR-Bash-Python/oldlog.txt
 	fi
-	mv /usr/local/SSR-Bash-Python/update.txt /usr/local/SSR-Bash-Python/oldupdate.txt
+	mv /usr/local/SSR-Bash-Python/log.txt /usr/local/SSR-Bash-Python/oldlog.txt
 fi
 PID=$(ps -ef |grep -v grep | grep "bash" | grep "servercheck.sh" | grep "run" | awk '{print $2}')
 if [[ -z $PID ]];then

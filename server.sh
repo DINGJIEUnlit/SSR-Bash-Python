@@ -31,8 +31,6 @@ echo "Does not support this OS, Please contact the author! "
 kill -9 $$
 fi
 servercheck(){
-	echo "你要做什么？"
-	echo ""
 	echo "1.启动服务"
 	echo "2.停止服务"
 	echo "3.重启服务"
@@ -51,7 +49,7 @@ servercheck(){
 	if [[ $serverch == 1 ]];then
 		PID=$(ps -ef |grep -v grep | grep "bash" | grep "servercheck.sh" | grep "run" | awk '{print $2}')
 		if [[ ! -z ${PID} ]];then
-			echo "该服务已经启动，无需操作"
+			echo "服务已启动，无需操作"
 			servercheck
 		else
 			nohup bash /usr/local/SSR-Bash-Python/servercheck.sh run 2>/dev/null &
@@ -62,7 +60,7 @@ servercheck(){
 	if [[ $serverch == 2 ]];then
 		PID=$(ps -ef |grep -v grep | grep "bash" | grep "servercheck.sh" | grep "run" | awk '{print $2}')
 		if [[ -z ${PID} ]];then
-			echo "该进程不存在,你无法停止服务"
+			echo "进程不存在,无法停止"
 			servercheck
 		else
 			bash /usr/local/SSR-Bash-Python/servercheck.sh stop
@@ -72,12 +70,12 @@ servercheck(){
 	if [[ $serverch == 3 ]];then
 		PID=$(ps -ef |grep -v grep | grep "bash" | grep "servercheck.sh" | grep "run" | awk '{print $2}')
 		if [[ -z ${PID} ]];then
-			echo "该进程不存在,你无法重启服务"
+			echo "进程不存在,无法重启服务"
 			servercheck
 		else
 			bash /usr/local/SSR-Bash-Python/servercheck.sh stop
 			nohup bash /usr/local/SSR-Bash-Python/servercheck.sh run 2>/dev/null &
-			echo "重启大成功"
+			echo "重启成功"
 			servercheck
 		fi
 	fi
@@ -86,7 +84,7 @@ servercheck(){
 			cat /usr/local/SSR-Bash-Python/check.log
 			servercheck
 		else
-			echo "没有找到配置文件！"
+			echo "没有找到log文件！"
 			servercheck
 		fi
 	fi
@@ -114,7 +112,7 @@ echo "5.运行状态"
 echo "6.修改DNS"
 echo "7.开启用户WEB面板"
 echo "8.关闭用户WEB面板"
-echo "9.开/关服务端开机启动"
+echo "9.启用服务端开机启动"
 echo "10.服务器自动巡检系统"
 echo "11.服务器网络与IO测速"
 echo "直接回车返回上级菜单"
@@ -267,6 +265,7 @@ EOF
     	echo "
 iptables-restore < /etc/iptables.up.rules
 bash /usr/local/shadowsocksr/logrun.sh
+bash /usr/local/shadowsocksr/servercheck.sh hide
 " > /etc/rc.d/init.d/ssr-bash-python
     	chmod +x  /etc/rc.d/init.d/ssr-bash-python
     	echo "/etc/rc.d/init.d/ssr-bash-python" >> /etc/rc.d/rc.local

@@ -65,26 +65,22 @@ AutoIptables(){
         exit 0
     fi
 }
-echo "测试区域，请勿随意使用"
-echo "1.更新SSR-Bsah"
-echo "2.一键封禁BT下载，SPAM邮件流量（无法撤销）"
-echo "3.防止暴力破解SS连接信息 (重启后失效)"
-echo "4.布署网络加速"
-echo "5.BBR 控制台"
-echo "6.锐速 控制台"
-echo "7.LotServer 控制台"
-echo "8.UML-LKL(OpenVZ-BBR)安装"
-echo "9.防火墙增强配置（有风险）"
+echo "1.布署网络加速"
 while :; do echo
 	read -p "请选择： " devc
 	[ -z "$devc" ] && ssr && break
-	if [[ ! $devc =~ ^[1-9]$ ]]; then
+	if [[ ! $devc =~ ^[1]$ ]]; then
 		echo "输入错误! 请输入正确的数字!"
 	else
 		break	
 	fi
 done
 
+if [[ $devc == 1 ]];then
+		wget -q -N --no-check-certificate "https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh" && chmod +x tcp.sh && bash tcp.sh
+fi
+
+{
 if [[ $devc == 1 ]];then
 	rm -rf /usr/local/bin/ssr
 	cd /usr/local/SSR-Bash-Python/
@@ -104,20 +100,6 @@ if [[ $devc == 3 ]];then
 	nohup tail -F /usr/local/shadowsocksr/ssserver.log | python autoban.py >log 2>log &
 fi
 
-if [[ $devc == 4 ]];then
-	#代码来自：https://91vps.us/2017/08/24/ss-panel-v3-mod/
-	rsum=`date +%s%N | md5sum | head -c 6`
-	echo "您即将布署网络加速"
-	echo -e "在下面输入\e[31;49m $rsum \e[0m表示您已知晓风险并同意安装，输入其它内容将退出安装！"
-	read -n 6 -p "请输入： " choise
-	if [[ $choise == $rsum ]];then
-		wget -q -N --no-check-certificate "https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh" && chmod +x tcp.sh && bash tcp.sh
-	else
-		echo "输入错误，安装退出！"
-		sleep 2s
-		ssr
-	fi
-fi
 bbrcheck(){
 cd /usr/loca/SSR-Bash-Python
 #GitHub:https://github.com/ToyoDAdoubi
@@ -335,3 +317,4 @@ if [[ $devc == 9  ]];then
     bash /usr/local/SSR-Bash-Python/dev.sh
     exit 0
 fi
+}
