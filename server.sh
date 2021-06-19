@@ -81,8 +81,8 @@ servercheck(){
 		fi
 	fi
 	if [[ $serverch == 4 ]];then
-		if [[ -e /usr/local/SSR-Bash-Python/check.log ]];then
-			cat /usr/local/SSR-Bash-Python/check.log
+		if [[ -e ${pwd}/check.log ]];then
+			cat ${pwd}/check.log
 			servercheck
 		else
 			echo "没有找到log文件！"
@@ -104,8 +104,8 @@ servercheck(){
 		fi
 	fi
 		if [[ $serverch == 6 ]];then
-		if [[ -e /usr/local/SSR-Bash-Python/state.log ]];then
-			cat /usr/local/SSR-Bash-Python/state.log
+		if [[ -e ${pwd}/state.log ]];then
+			cat ${pwd}/state.log
 			servercheck
 		else
 			echo "没有找到log文件！"

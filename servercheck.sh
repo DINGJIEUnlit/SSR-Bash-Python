@@ -263,7 +263,7 @@ if [[ $1 == stop ]];then
 fi
 if [[ $1 == hide ]];then
 	values="1"
-	nohup bash ${pwd}/servercheck.sh run
+	nohup bash /usr/local/SSR-Bash-Python/servercheck.sh run
 fi
 if [[ $1 == run ]];then
 	values="1"
