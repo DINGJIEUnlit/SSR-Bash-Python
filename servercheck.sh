@@ -114,6 +114,7 @@ dothetest(){
 	PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
 	if [[ -z ${PID} ]]; then
 		echo "进程检测失败" | tee -a ${log_file}
+		echo "PID : ${PID}" | tee -a ${log_file}
 		echo "开始重启服务" | tee -a ${log_file}
 		export SSRcheck=Error
 		#echo "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}" | mutt -s "[Warning]SSR-Bash-Python" ${email}
@@ -196,7 +197,7 @@ if [[ $1 == stop ]];then
 			echo "结束失败"
 		fi
 	fi
-	echo "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
+	echo -e "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
 fi
 if [[ $1 == hide ]];then
 	values="1"
