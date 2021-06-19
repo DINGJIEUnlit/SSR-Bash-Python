@@ -1,5 +1,5 @@
 # 脚本版本
-   V1.9.8
+   V2.0.0
 
 ## 安装或更新 ##
     wget -q -N --no-check-certificate https://github.com/DINGJIEUnlit/SSR-Bash-Python/raw/master/install.sh && bash install.sh
