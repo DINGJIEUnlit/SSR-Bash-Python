@@ -94,10 +94,10 @@ rand(){
 }
 
 dothetest(){
-        if [[ ! -e ${log_file} ]];then
-	        echo "配置文件不存在，失败！"
-                exit 1
-        fi
+    if [[ ! -e ${log_file} ]];then
+	    echo "配置文件不存在，失败！"
+        exit 1
+    fi
 	nowdate=`date '+%Y-%m-%d %H:%M:%S'`
 	filesize=`ls -l $log_file | awk '{ print $5 }'`
 	#email=`cat ${log_file} | head -n 6 | tail -n 1 | awk -F" = " '{ print $2 }'`
@@ -105,20 +105,15 @@ dothetest(){
 	if [ $filesize -gt $maxsize ];then
 		echo "日志文件大小已达到上限，开始自动转储！" | tee -a ${log_file}
 		tar -cjf servercheck"`date +%Y-%m-%d_%H:%M:%S`".tar.bz2 $log_file
-		logset=`cat ${log_file} | head -n 6`
+		logset=`cat ${log_file} | head -n 2`
 		rm -f ${log_file}
 		echo "$logset" >> ${log_file}
 		echo -e "========== 开始记录测试信息[$(date '+%Y-%m-%d %H:%M:%S')] ==========\n" >> ${log_file}
 		echo "转储完成!"
 	fi
-	local_port=$(rand)
-	passwd=`cat ${log_file} | head -n 2 | tail -n 1 | awk -F" = " '{ print $2 }'`
-	ip=`cat ${log_file} | head -n 4 | tail -n 1 | awk -F" = " '{ print $2 }'`
-	nohup python "${ssr_local}/local.py" -b "127.0.0.1" -l "${local_port}" -s "${ip}" -p "${uport}" -k "${passwd}" -m "${um1}" -O "${ux1}" -o "${uo1}" > /dev/null 2>&1 &
-	sleep 2s
 	PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
 	if [[ -z ${PID} ]]; then
-		echo "ShadowsocksR客户端 启动失败，无法连接到服务器!" | tee -a ${log_file}
+		echo "进程检测失败" | tee -a ${log_file}
 		echo "开始重启服务" | tee -a ${log_file}
 		export SSRcheck=Error
 		#echo "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}" | mutt -s "[Warning]SSR-Bash-Python" ${email}
@@ -130,58 +125,15 @@ dothetest(){
 		sleep 1m
 		dothetest
 	else
-		Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}") | tee -a ${log_file}
-        echo "记录log" | tee -a ${log_file}
-		if [[ -z ${Test_results} ]];then
-			echo "第1次连接失败，重试!" | tee -a ${log_file}
-			sleep 2s
-			Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
-			if [[ -z ${Test_results} ]];then
-				echo "第2次连接失败，重试!" | tee -a ${log_file}
-				sleep 2s
-				Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
-				if [[ -z ${Test_results} ]];then
-					echo "第3次连接失败,开始重启服务" | tee -a ${log_file}
-					bash /usr/local/shadowsocksr/stop.sh
-					bash /usr/local/shadowsocksr/logrun.sh
-					iptables-restore < /etc/iptables.up.rules
-					echo "服务已重启!" | tee -a ${log_file}
-					Test_results=$(curl --socks5 127.0.0.1:${local_port} -k -m ${Timeout} -s "${test_URL}")
-					if [[ -z ${Test_results} ]];then
-						export SSRcheck=Error
-						echo "连接失败!" | tee -a ${log_file}
-					else
-						echo "连接成功！" | tee -a ${log_file}
-					fi
-					#echo "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}" | mutt -s "[Warning]SSR-Bash-Python" ${email}
-				else
-					echo "连接成功！" | tee -a ${log_file}
-				fi
-			else
-				echo "连接成功！" | tee -a ${log_file}
-			fi
-		else
-			echo "连接成功！" | tee -a ${log_file}
-		fi
-		kill -9 ${PID}
-		PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
-		if [[ ! -z ${PID} ]]; then
-			echo "ShadowsocksR客户端 停止失败，请检查 !" | tee -a ${log_file}
-			export SSRcheck=Error
-			#echo "检测到服务器在${nowdate}有一次异常记录，具体请查看日志:${log_file}" | mutt -s "[Warning]SSR-Bash-Python" ${email}
-		fi
+		echo "进程检测完成" | tee -a ${log_file}
 		echo -e "========== 记录测试信息结束[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${log_file}
 	fi
 }
 
 main(){
 if [[ ! -e ${log_file} ]];then
-	mades
-	if [[ $uadd == no ]];then
-		exit 1
-	fi
 	while :;do echo 
-	echo "请输入每次检测的间隔时间(单位：分){不建议低于10分钟}[默认30]:"
+	echo "请输入每次检测的间隔时间(单位：分)[默认30]:"
 		read everytime
 		if [[ -z ${everytime} ]];then
 			everytime="30"
@@ -192,28 +144,14 @@ if [[ ! -e ${log_file} ]];then
 			break
 		fi
 	done
-	while :;do echo
-		echo "请输入服务器的IP（默认 172.217.160.78 google ip）:"
-		read ip
-		if [[ -z ${ip} ]];then
-			ip="172.217.160.78"
-		fi
-		regex="\b(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[1-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[1-9])\b"
-		ckStep2=`echo $ip | egrep $regex | wc -l`
-		if [[ $ckStep2 -eq 0 ]];then
-			echo "无效的ip地址"
-		else
-			break
-		fi
-	done
-	echo "#The IP = $ip" >> ${log_file}
 	echo "#The Time = ${everytime}m" >> ${log_file}
 	echo "#############################################" >> ${log_file}
 	if [[ ${values} == 1 ]];then
-		dothetest
+	    main
+		exit 0
 	fi
 else
-	thetime=`cat ${log_file} | head -n 5 | tail -n 1 | awk -F" = " '{ print $2 }'`
+	thetime=`cat ${log_file} | head -n 1 | tail -n 1 | awk -F" = " '{ print $2 }'`
 	if [[ -z ${thetime} ]];then
 		rm -f ${log_file}
 		main
@@ -225,15 +163,14 @@ fi
 }
 
 runloop(){
-    rm -f ${state_file}
-    echo "========== 服务已启动[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${state_file}
+    echo "========== 服务已启动[$(date '+%Y-%m-%d %H:%M:%S')]==========" >> ${log_file}
 	while :
 	do
 		if [[ -e ${log_file} ]];then
 			main
 		else
 			echo "尚未配置，退出"
-			echo "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${state_file}
+			echo "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========" >> ${log_file}
 			break
 		fi
 	done
@@ -247,7 +184,6 @@ if [[ $1 == "" ]];then
 	echo -e "If you want to stop running this program.You should running \e[32;49m servercheck.sh stop \e[0m to stop it."
 fi
 if [[ $1 == stop ]];then
-	thetime=`cat ${log_file} | head -n 5 | tail -n 1 | awk -F" = " '{ print $2 }'`
 	PID=$(ps -ef |grep -v grep | grep "bash" | grep "servercheck.sh" | grep "run" | awk '{print $2}')
 	if [[ -z ${PID} ]];then
 		echo "进程不存在，程序未运行或者已经结束"
@@ -260,7 +196,7 @@ if [[ $1 == stop ]];then
 			echo "结束失败"
 		fi
 	fi
-	echo "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${state_file}
+	echo "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n\n" >> ${log_file}
 fi
 if [[ $1 == hide ]];then
 	values="1"
@@ -275,9 +211,6 @@ if [[ $1 == conf ]];then
 fi
 if [[ $1 == reconf ]];then
 	rm -f ${log_file}
-	cd /usr/local/shadowsocksr
-	python mujson_mgr.py -d -u $uname
-	cd ${pwd}
 	main
 fi
 if [[ $1 == log ]];then
