@@ -275,7 +275,6 @@ EOF
     	echo "
 iptables-restore < /etc/iptables.up.rules
 bash /usr/local/shadowsocksr/logrun.sh
-bash /usr/local/shadowsocksr/servercheck.sh hide
 " > /etc/rc.d/init.d/ssr-bash-python
     	chmod +x  /etc/rc.d/init.d/ssr-bash-python
     	echo "/etc/rc.d/init.d/ssr-bash-python" >> /etc/rc.d/rc.local
