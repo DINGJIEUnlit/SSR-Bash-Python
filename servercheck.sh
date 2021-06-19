@@ -163,14 +163,14 @@ fi
 }
 
 runloop(){
-    echo "========== 服务已启动[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
+    echo -e "========== 服务已启动[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
 	while :
 	do
 		if [[ -e ${log_file} ]];then
 			main
 		else
 			echo "尚未配置，退出"
-			echo "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
+			echo -e "========== 服务已停止[$(date '+%Y-%m-%d %H:%M:%S')]==========\n" >> ${log_file}
 			break
 		fi
 	done
