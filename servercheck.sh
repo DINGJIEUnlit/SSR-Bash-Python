@@ -127,7 +127,10 @@ dothetest(){
 	    passwd=`cat ${log_file} | head -n 2 | tail -n 1 | awk -F" = " '{ print $2 }'`
 		rm -f ${state_file}
 		echo "启动本地测试" | tee -a ${log_file}
-	    nohup python "${ssr_local}/local.py" -b "127.0.0.1" -l "${local_port}" -p "${uport}" -k "${passwd}" -m "${um1}" -O "${ux1}" -o "${uo1}" >> ${state_file} 2>&1 &
+		ip=`curl -m 10 -s http://members.3322.org/dyndns/getip`
+		local_port=$(rand)
+		sleep 2s
+	    nohup python "${ssr_local}/local.py" -b "127.0.0.1" -l "${local_port}" -s "${ip}" -p "${uport}" -k "${passwd}" -m "${um1}" -O "${ux1}" -o "${uo1}" >> ${state_file} 2>&1 &
 		sleep 2s
 		PID=$(ps -ef |grep -v grep | grep "local.py" | grep "${local_port}" | awk '{print $2}')
 		if [[ -z ${PID} ]]; then
